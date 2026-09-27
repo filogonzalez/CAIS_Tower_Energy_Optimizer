@@ -1,0 +1,38 @@
+# Agent/session scratch (never repository content)
+.codex-tmp/
+tower_energy_optimizer_pr.plan.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Databricks / bundle
+.databricks/
+*.whl
+build/
+dist/
+
+# Generated data, manifests, credentials — never committed
+data/
+artifacts/
+*.pem
+*.key
+.env
+.env.*
+secrets.json
+**/generation_manifest*.json
+**/validation_report*.json
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

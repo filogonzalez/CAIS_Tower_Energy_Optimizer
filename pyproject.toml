@@ -1,0 +1,79 @@
+[project]
+name = "tower-energy-optimizer"
+version = "0.1.0"
+description = "Synthetic Energy NOC demo for a fictional Puerto Rico telecom tower operator (Databricks Lakehouse)."
+requires-python = ">=3.11"
+readme = "README.md"
+dependencies = [
+    "pyspark==3.5.3",
+    "delta-spark==3.2.1",
+    "pandas>=2.2,<3",
+    "numpy>=1.26,<2.1",
+    "pyarrow>=16,<18",
+    "Faker>=25,<26",
+    "shapely>=2.0,<2.1",
+    "pydantic>=2.7,<3",
+    "python-dateutil>=2.9,<3",
+    "databricks-sdk>=0.30,<0.40",
+    "databricks-vectorsearch>=0.40,<0.50",
+    "scikit-learn>=1.4,<1.6",
+    "mlflow-skinny>=2.14,<3",
+    "psycopg[binary]>=3.1,<4",
+    "dash>=2.17,<3",
+    "dash-bootstrap-components>=1.6,<2",
+    "plotly>=5.22,<6",
+    "requests>=2.32,<3",
+]
+
+[project.scripts]
+teo-capabilities = "validation.job_runner:main"
+teo-bootstrap-catalog = "validation.job_runner:main"
+teo-generate = "validation.job_runner:main"
+teo-upload = "validation.job_runner:main"
+teo-train-baseline = "validation.job_runner:main"
+teo-train-failure = "validation.job_runner:main"
+teo-batch-score = "validation.job_runner:main"
+teo-setup-lakebase = "validation.job_runner:main"
+teo-upsert-lakebase = "validation.job_runner:main"
+teo-mirror-audit = "validation.job_runner:main"
+teo-create-index = "validation.job_runner:main"
+teo-setup-genie = "validation.job_runner:main"
+teo-simulate = "validation.job_runner:main"
+teo-phase-checks = "validation.job_runner:main"
+
+[build-system]
+requires = ["setuptools>=70", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+lakebase = ["migrations/*.sql"]
+agent = ["*.sql"]
+genie = ["*.sql"]
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.2,<2",
+    "wheel>=0.44,<1",
+    "pytest>=8.2,<9",
+    "pytest-cov>=5,<6",
+    "ruff>=0.5,<0.6",
+    "mypy>=1.10,<2",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true

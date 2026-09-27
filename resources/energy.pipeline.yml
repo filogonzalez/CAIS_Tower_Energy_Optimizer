@@ -1,0 +1,23 @@
+resources:
+  pipelines:
+    energy_pipeline:
+      name: "[${bundle.target}] Tower Energy SDP"
+      catalog: ${var.catalog}
+      target: ${var.schema_curated}
+      serverless: true
+      continuous: false
+      development: true
+      libraries:
+        - file:
+            path: ../src/pipeline/energy_pipeline.py
+      configuration:
+        teo.source_root: /Volumes/${var.catalog}/${var.schema_raw}/${var.volume_name}/seed-${var.seed}-asof-${var.reference_date}
+        teo.catalog: ${var.catalog}
+        teo.schema_raw: ${var.schema_raw}
+        teo.schema_curated: ${var.schema_curated}
+        teo.schema_analytics: ${var.schema_analytics}
+        teo.schema_ml: ${var.schema_ml}
+        teo.reference_date: ${var.reference_date}
+        teo.extraction_endpoint: ${var.extraction_llm_endpoint}
+      channel: CURRENT
+      photon: true

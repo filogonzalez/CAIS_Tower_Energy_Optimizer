@@ -1,0 +1,217 @@
+resources:
+  jobs:
+    capability_manifest:
+      name: "[${bundle.target}] TEO Capability Manifest"
+      max_concurrent_runs: 1
+      environments: &serverless_environments
+        - environment_key: default
+          spec:
+            client: "4"
+            dependencies:
+              - ../dist/*.whl
+      tasks:
+        - task_key: discover_capabilities
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-capabilities
+            named_parameters: &runtime_parameters
+              target: ${bundle.target}
+              brand: ${var.brand}
+              catalog: ${var.catalog}
+              schema-raw: ${var.schema_raw}
+              schema-curated: ${var.schema_curated}
+              schema-analytics: ${var.schema_analytics}
+              schema-ml: ${var.schema_ml}
+              schema-agents: ${var.schema_agents}
+              volume-name: ${var.volume_name}
+              seed: "${var.seed}"
+              reference-date: ${var.reference_date}
+              site-count: "${var.site_count}"
+              telemetry-days: "${var.telemetry_days}"
+              storm-start-offset-days: "${var.storm_start_offset_days}"
+              storm-duration-days: "${var.storm_duration_days}"
+              dust-start-offset-days: "${var.dust_start_offset_days}"
+              dust-duration-days: "${var.dust_duration_days}"
+              grid-price: "${var.grid_price}"
+              diesel-price: "${var.diesel_price}"
+              diesel-emissions-factor: "${var.diesel_emissions_factor}"
+              diesel-burn-rate: "${var.diesel_burn_rate}"
+              hvac-capex-usd: "${var.hvac_capex_usd}"
+              rectifier-capex-usd: "${var.rectifier_capex_usd}"
+              battery-capex-usd: "${var.battery_capex_usd}"
+              solar-capex-usd: "${var.solar_capex_usd}"
+              retrofit-annual-maintenance-pct: "${var.retrofit_annual_maintenance_pct}"
+              extraction-llm-endpoint: ${var.extraction_llm_endpoint}
+              agent-llm-endpoint: ${var.agent_llm_endpoint}
+              agent-llm-fallback-endpoint: ${var.agent_llm_fallback_endpoint}
+              embedding-endpoint: ${var.embedding_endpoint}
+              vector-search-endpoint: ${var.vector_search_endpoint}
+              agent-serving-endpoint: ${var.agent_serving_endpoint}
+              warehouse-id: ${var.warehouse_id}
+              lakebase-instance: ${var.lakebase_instance}
+              lakebase-database: ${var.lakebase_database}
+              genie-space-name: ${var.genie_space_name}
+              app-name: ${var.app_name}
+              engineering-group: ${var.engineering_group}
+              analyst-group: ${var.analyst_group}
+              field-manager-group: ${var.field_manager_group}
+              finance-group: ${var.finance_group}
+              approver-group: ${var.approver_group}
+
+    generate_mock_data:
+      name: "[${bundle.target}] TEO Generate Mock Data"
+      max_concurrent_runs: 1
+      environments: *serverless_environments
+      tasks:
+        - task_key: bootstrap_catalog
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-bootstrap-catalog
+            named_parameters: *runtime_parameters
+        - task_key: generate_snapshot
+          depends_on: [{task_key: bootstrap_catalog}]
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-generate
+            named_parameters:
+              <<: *runtime_parameters
+              output: /local_disk0/teo-generated
+        - task_key: upload_snapshot
+          depends_on: [{task_key: generate_snapshot}]
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-upload
+            named_parameters:
+              <<: *runtime_parameters
+              snapshot: /local_disk0/teo-generated/seed-${var.seed}-asof-${var.reference_date}
+
+    train_models:
+      name: "[${bundle.target}] TEO Train Models"
+      max_concurrent_runs: 1
+      environments: *serverless_environments
+      tasks:
+        - task_key: train_baseline_anomaly
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-train-baseline
+            named_parameters: *runtime_parameters
+        - task_key: train_failure_risk
+          depends_on: [{task_key: train_baseline_anomaly}]
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-train-failure
+            named_parameters: *runtime_parameters
+
+    daily_refresh:
+      name: "[${bundle.target}] TEO Daily Refresh (schedule disabled)"
+      max_concurrent_runs: 1
+      environments: *serverless_environments
+      tasks:
+        - task_key: foundational_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.energy_pipeline.id}
+        - task_key: phase2_checks
+          depends_on: [{task_key: foundational_pipeline}]
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-phase-checks
+            named_parameters:
+              <<: *runtime_parameters
+              phase: phase2
+        - task_key: batch_score
+          depends_on: [{task_key: phase2_checks}]
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-batch-score
+            named_parameters:
+              <<: *runtime_parameters
+              baseline-uri: models:/${var.catalog}.${var.schema_ml}.energy_baseline@champion
+              anomaly-uri: models:/${var.catalog}.${var.schema_ml}.energy_anomaly@champion
+              failure-uri: models:/${var.catalog}.${var.schema_ml}.failure_risk@champion
+        - task_key: dependent_gold
+          depends_on: [{task_key: batch_score}]
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.dependent_gold_pipeline.id}
+        - task_key: phase3_checks
+          depends_on: [{task_key: dependent_gold}]
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-phase-checks
+            named_parameters:
+              <<: *runtime_parameters
+              phase: phase3
+        - task_key: lakebase_projection
+          depends_on: [{task_key: phase3_checks}]
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-upsert-lakebase
+            named_parameters: *runtime_parameters
+        - task_key: audit_mirror
+          depends_on: [{task_key: lakebase_projection}]
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-mirror-audit
+            named_parameters: *runtime_parameters
+
+    deploy_agent:
+      name: "[${bundle.target}] TEO Deploy Agent"
+      max_concurrent_runs: 1
+      environments: *serverless_environments
+      tasks:
+        - task_key: setup_lakebase
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-setup-lakebase
+            named_parameters: *runtime_parameters
+        - task_key: create_vector_index
+          depends_on: [{task_key: setup_lakebase}]
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-create-index
+            named_parameters: *runtime_parameters
+
+    setup_genie:
+      name: "[${bundle.target}] TEO Setup Genie"
+      max_concurrent_runs: 1
+      environments: *serverless_environments
+      tasks:
+        - task_key: setup_space
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-setup-genie
+            named_parameters: *runtime_parameters
+
+    run_simulator:
+      name: "[${bundle.target}] TEO Resilience Simulator"
+      max_concurrent_runs: 1
+      environments: *serverless_environments
+      tasks:
+        - task_key: simulate
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-simulate
+            named_parameters: *runtime_parameters
+        - task_key: phase4_checks
+          depends_on: [{task_key: simulate}]
+          environment_key: default
+          python_wheel_task:
+            package_name: tower_energy_optimizer
+            entry_point: teo-phase-checks
+            named_parameters:
+              <<: *runtime_parameters
+              phase: phase4
