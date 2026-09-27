@@ -1,0 +1,122 @@
+bundle:
+  name: tower_energy_pr
+
+include:
+  - resources/*.yml
+
+artifacts:
+  default:
+    type: whl
+    build: python -m build --wheel --no-isolation
+    path: .
+
+variables:
+  catalog:
+    default: tower_energy_dev
+  schema_raw:
+    default: raw_telemetry
+  schema_curated:
+    default: curated
+  schema_analytics:
+    default: analytics
+  schema_ml:
+    default: ml
+  schema_agents:
+    default: agents
+  volume_name:
+    default: mock_data
+  brand:
+    default: IslaNet Telecom
+  seed:
+    default: 42
+  reference_date:
+    default: "2026-09-26"
+  site_count:
+    default: 300
+  telemetry_days:
+    default: 180
+  storm_start_offset_days:
+    default: 95
+  storm_duration_days:
+    default: 3
+  dust_start_offset_days:
+    default: 40
+  dust_duration_days:
+    default: 7
+  grid_price:
+    default: 0.28
+  diesel_price:
+    default: 1.10
+  diesel_emissions_factor:
+    default: 2.68
+  diesel_burn_rate:
+    default: 0.088
+  hvac_capex_usd:
+    default: 8000
+  rectifier_capex_usd:
+    default: 5500
+  battery_capex_usd:
+    default: 18000
+  solar_capex_usd:
+    default: 32000
+  retrofit_annual_maintenance_pct:
+    default: 0.02
+  extraction_llm_endpoint:
+    default: databricks-claude-haiku-4-5
+  agent_llm_endpoint:
+    default: databricks-claude-sonnet-4-5
+  agent_llm_fallback_endpoint:
+    default: databricks-claude-haiku-4-5
+  embedding_endpoint:
+    default: databricks-gte-large-en
+  vector_search_endpoint:
+    default: teo_vs_endpoint
+  agent_serving_endpoint:
+    default: teo_maintenance_agent
+  warehouse_id:
+    description: Existing serverless SQL warehouse ID; set per target.
+    default: ""
+  lakebase_instance:
+    default: teo-lakebase-dev
+  lakebase_database:
+    default: teo
+  genie_space_name:
+    default: Tower Energy Optimizer Dev
+  app_name:
+    default: tower-energy-cockpit-dev
+  engineering_group:
+    default: teo-engineering
+  analyst_group:
+    default: teo-analysts
+  field_manager_group:
+    default: teo-field-managers
+  finance_group:
+    default: teo-finance
+  approver_group:
+    default: teo-approvers
+
+workspace:
+  root_path: /Workspace/Users/${workspace.current_user.userName}/.bundle/${bundle.name}/${bundle.target}
+
+sync:
+  include:
+    - src/**
+    - resources/**
+    - pyproject.toml
+
+targets:
+  dev:
+    default: true
+    mode: development
+    variables:
+      catalog: tower_energy_dev
+      lakebase_instance: teo-lakebase-dev
+      app_name: tower-energy-cockpit-dev
+      genie_space_name: Tower Energy Optimizer Dev
+  demo:
+    mode: production
+    variables:
+      catalog: tower_energy_demo
+      lakebase_instance: teo-lakebase-demo
+      app_name: tower-energy-cockpit-demo
+      genie_space_name: Tower Energy Optimizer Demo
