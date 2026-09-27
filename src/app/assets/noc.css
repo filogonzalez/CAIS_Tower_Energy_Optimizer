@@ -1,0 +1,5 @@
+body { background: #071019; color: #e5f2ff; }
+.kpi-card { border-left: 4px solid #21d4fd; min-height: 115px; }
+.synthetic-banner { color: #ffcf5c; font-weight: 700; text-align: right; }
+.state-banner { color: #9ec5fe; padding: 0.5rem 0; }
+.error-state { color: #ff7b7b; font-weight: 600; }

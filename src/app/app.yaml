@@ -1,0 +1,16 @@
+command: ["python", "app.py"]
+env:
+  - name: TEO_BRAND
+    value: IslaNet Telecom
+  - name: TEO_APPROVER_GROUP
+    value: teo-approvers
+  - name: TEO_LAKEBASE_DSN
+    valueFrom: database
+  - name: DATABRICKS_WAREHOUSE_ID
+    valueFrom: sql-warehouse
+  - name: TEO_AGENT_ENDPOINT
+    valueFrom: serving-endpoint
+  - name: TEO_VECTOR_INDEX
+    valueFrom: vector-search-index
+  - name: TEO_GENIE_SPACE_ID
+    valueFrom: genie-space

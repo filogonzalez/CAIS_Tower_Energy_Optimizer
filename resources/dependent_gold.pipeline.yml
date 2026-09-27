@@ -1,0 +1,19 @@
+resources:
+  pipelines:
+    dependent_gold_pipeline:
+      name: "[${bundle.target}] Tower Energy Dependent Gold"
+      catalog: ${var.catalog}
+      target: ${var.schema_analytics}
+      serverless: true
+      continuous: false
+      development: true
+      libraries:
+        - file:
+            path: ../src/pipeline/dependent_gold.py
+      configuration:
+        teo.catalog: ${var.catalog}
+        teo.schema_curated: ${var.schema_curated}
+        teo.schema_analytics: ${var.schema_analytics}
+        teo.schema_ml: ${var.schema_ml}
+      channel: CURRENT
+      photon: true
