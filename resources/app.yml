@@ -4,3 +4,17 @@ resources:
       name: ${var.app_name}
       description: Synthetic Puerto Rico Tower Energy NOC cockpit
       source_code_path: ../src/app
+      resources:
+        - name: database
+          database:
+            instance_name: ${var.lakebase_instance}
+            database_name: ${var.lakebase_database}
+            permission: CAN_CONNECT_AND_CREATE
+        - name: sql-warehouse
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: CAN_USE
+        - name: serving-endpoint
+          serving_endpoint:
+            name: ${var.agent_serving_endpoint}
+            permission: CAN_QUERY

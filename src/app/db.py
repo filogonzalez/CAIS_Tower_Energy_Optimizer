@@ -12,6 +12,11 @@ import psycopg
 
 APPROVER_GROUP = os.getenv("TEO_APPROVER_GROUP", "teo-approvers")
 
+# Canonical synthetic Puerto Rico regions (mirrors mock_data.config.REGIONS).
+# Users authenticated by Databricks Apps but not scoped to a subset of
+# regions by an upstream proxy see all regions rather than none.
+ALL_REGIONS = frozenset({"Metro", "North", "South", "East", "West", "Central", "Islands"})
+
 
 @contextmanager
 def app_connection() -> Iterator[psycopg.Connection]:
@@ -42,12 +47,10 @@ def user_context_from_headers(headers) -> UserContext:
         raise PermissionError("Authenticated Databricks Apps identity is required")
     groups = frozenset(filter(None, (headers.get("X-Databricks-User-Groups") or "").split(",")))
     regions = frozenset(filter(None, (headers.get("X-TEO-Regions") or "").split(",")))
-    return UserContext(email=email, groups=groups, regions=regions)
+    return UserContext(email=email, groups=groups, regions=regions or ALL_REGIONS)
 
 
 def fetch_site_status(user: UserContext, limit: int = 500) -> list[dict]:
-    if not user.regions:
-        return []
     query = """
       SELECT site_id, region, municipio, site_type, priority_score, score_status,
              anomaly_score, failure_risk_14d, resilience_score, current_source,
