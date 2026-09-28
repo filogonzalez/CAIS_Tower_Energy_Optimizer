@@ -100,3 +100,31 @@ def test_app_value_from_keys_are_bound_as_app_resources():
 def test_app_requirements_match_project_sdk_pin():
     reqs = Path("src/app/requirements.txt").read_text(encoding="utf-8").split()
     assert "databricks-sdk>=0.60,<0.70" in reqs
+
+
+def test_all_bundle_targets_use_existing_catalog():
+    bundle = yaml.safe_load(Path("databricks.yml").read_text(encoding="utf-8"))
+    assert bundle["variables"]["catalog"]["default"] == "tower_energy_optimizer"
+    assert {target["variables"]["catalog"] for target in bundle["targets"].values()} == {
+        "tower_energy_optimizer"
+    }
+
+
+def test_artifact_build_does_not_invoke_python_m_build():
+    """The build command must not use ``python -m build`` because the
+    deployment environment's system Python lacks the ``build`` package and
+    pip.  Instead it delegates to a script that invokes the PEP 517 backend
+    (setuptools.build_meta) directly."""
+    bundle = yaml.safe_load(Path("databricks.yml").read_text(encoding="utf-8"))
+    build_cmd = bundle["artifacts"]["default"]["build"]
+    assert "python -m build" not in build_cmd
+    assert "build_wheel.sh" in build_cmd
+
+
+def test_build_wheel_script_invokes_pep517_backend():
+    script = Path("scripts/build_wheel.sh")
+    assert script.exists(), "build_wheel.sh must exist in scripts/"
+    content = script.read_text(encoding="utf-8")
+    assert "setuptools.build_meta" in content
+    assert "build_wheel" in content
+    assert "python -m build" not in content
