@@ -7,12 +7,12 @@ include:
 artifacts:
   default:
     type: whl
-    build: python -m build --wheel --no-isolation
+    build: bash scripts/build_wheel.sh
     path: .
 
 variables:
   catalog:
-    default: tower_energy_dev
+    default: tower_energy_optimizer
   schema_raw:
     default: raw_telemetry
   schema_curated:
@@ -109,14 +109,14 @@ targets:
     default: true
     mode: development
     variables:
-      catalog: tower_energy_dev
+      catalog: tower_energy_optimizer
       lakebase_instance: teo-lakebase-dev
       app_name: tower-energy-cockpit-dev
       genie_space_name: Tower Energy Optimizer Dev
   demo:
     mode: production
     variables:
-      catalog: tower_energy_demo
+      catalog: tower_energy_optimizer
       lakebase_instance: teo-lakebase-demo
       app_name: tower-energy-cockpit-demo
       genie_space_name: Tower Energy Optimizer Demo

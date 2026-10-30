@@ -73,7 +73,7 @@ class Settings:
     brand_locale_secondary: str = field(default_factory=lambda: _env_str("BRAND_LOCALE_SECONDARY", "es"))
 
     # --- Unity Catalog namespace ------------------------------------------
-    catalog: str = field(default_factory=lambda: _env_str("CATALOG", "tower_energy_dev"))
+    catalog: str = field(default_factory=lambda: _env_str("CATALOG", "tower_energy_optimizer"))
     schema_raw: str = field(default_factory=lambda: _env_str("SCHEMA_RAW", "raw_telemetry"))
     schema_curated: str = field(default_factory=lambda: _env_str("SCHEMA_CURATED", "curated"))
     schema_analytics: str = field(default_factory=lambda: _env_str("SCHEMA_ANALYTICS", "analytics"))
